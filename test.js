@@ -1,3 +1,7 @@
+// TODO: Partially apply DOM differences instead of recreating all objects.
+
+// TODO: Hierarchical tree view
+
 Key =
 {
     set: function(json, key, value) {
@@ -20,6 +24,17 @@ Key =
         }
         return json[key[key.length-1]]
     },
+
+    equals: function(k1, k2) {
+        if (k1.length != k2.length)
+            return false
+
+        for (var i=0; i<k1.length; ++i) {
+            if (k1[i] != k2[i])
+                return false
+        }
+        return true
+    }
 }
 
 var DataModel = {
@@ -108,25 +123,61 @@ function List(parent, key)
     DataModel.addListener(this)
 }
 
-function Textbox(parent, field, key)
+function InputText(parent, field, key)
 {
+    var p = document.createElement("p")
+    var span = document.createElement("span")
+    span.setAttribute("class", "label")
+    span.appendChild(document.createTextNode(field + ":"))
+    p.appendChild(span)
+    this.input = document.createElement("input")
+    this.input.setAttribute("type", "text")
+    p.appendChild(this.input)
+    parent.appendChild(p)
+    this.input.onchange = function() {
+        DataModel.set(key, this.input.value)
+    }.bind(this)
+
     this.redraw = function() {
         object = DataModel.get(key)
-        var p = document.createElement("p")
-        p.appendChild(document.createTextNode(field + ": "))
-        var input = document.createElement("input")
-        input.setAttribute("type", "text")
         if (object)
-            input.setAttribute("value", object)
-        p.appendChild(input)
-        parent.appendChild(p)
-        input.onchange = function() {
-            DataModel.set(key, input.value)
+            this.input.setAttribute("value", object)
+    }
+
+    this.notify = this.redraw
+
+    this.redraw()
+    DataModel.addListener(this)
+}
+
+function TextArea(parent, field, key)
+{
+    var p = document.createElement("p")
+    var span = document.createElement("span")
+    span.setAttribute("class", "label")
+    span.appendChild(document.createTextNode(field + ":"))
+    p.appendChild(span)
+    this.textarea = document.createElement("textarea")
+    p.appendChild(this.textarea)
+    parent.appendChild(p)
+    this.textarea.onchange = function() {
+        DataModel.set(key, this.textarea.value)
+    }.bind(this)
+
+    this.redraw = function() {
+        object = DataModel.get(key)
+        if (object) {
+            this.textarea.empty()
+            this.textarea.appendChild(document.createTextNode(object))
         }
     }
 
+    this.notify = this.redraw
+
     this.redraw()
+    DataModel.addListener(this)
 }
+
 
 function Properties(parent)
 {
@@ -136,12 +187,14 @@ function Properties(parent)
         if (sel === undefined)
             return;
 
-        this.name = new Textbox(parent, "Name", sel.concat("name"))
-        this.text = new Textbox(parent, "Text", sel.concat("text"))
+        this.name = new InputText(parent, "Name", sel.concat("name"))
+        this.text = new TextArea(parent, "Text", sel.concat("text"))
     }
 
     this.notify = function(k, value) {
-        this.redraw()
+        if (Key.equals(k, ["selection"])) {
+            this.redraw()
+        }
     }
 
     this.redraw()
