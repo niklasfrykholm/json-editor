@@ -52,6 +52,10 @@ function Key(path)
         }
         return json[this.path[this.path.length-1]]
     }
+
+    this.append = function (arr) {
+        return new Key(this.path.concat(arr))
+    }
 }
 
 Element.prototype.empty = function() {
@@ -72,7 +76,10 @@ function List(parent, key)
             var t = document.createTextNode(child["name"])
             li.appendChild(t)
             ul.appendChild(li)
-            ul.onmousedown = function() {alert("click")}
+            var kk = key.append(["children", k, "name"])
+            li.onmousedown = function(kk) {
+                DataModel.set(kk, DataModel.get(kk) + " CLICK")
+            }.bind(this, kk)
         }
         parent.appendChild(ul)
     }
