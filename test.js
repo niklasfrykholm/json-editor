@@ -96,7 +96,16 @@ function List(parent, key)
         parent.empty()
         var ul = document.createElement("ul")
         var children = object["children"]
-        for (k in children) {
+        var keys = Object.keys(children)
+        keys.sort(
+            function (a,b) {
+                var ka = children[a]["name"]
+                var kb = children[b]["name"]
+                return (ka > kb) - (kb > ka)
+            }
+        )
+        for (var i=0; i<keys.length; ++i) {
+            var k = keys[i]
             var item_key = key.concat(["children", k])
             var child = children[k]
             var li = document.createElement("li")
@@ -113,6 +122,15 @@ function List(parent, key)
             }.bind(this, item_key)
         }
         parent.appendChild(ul)
+        var p = document.createElement("p")
+        p.appendChild(document.createTextNode("ADD"))
+        p.onmousedown = function() {
+            var id = (Math.floor((1 + Math.random()) * 0x10000)).toString()
+            var nk = key.concat(["children", id])
+            DataModel.set(nk.concat(["name"]), "Untitled")
+            DataModel.set(["selection"], nk)
+        }
+        parent.appendChild(p)
     }
 
     this.notify = function(k, value) {
