@@ -92,10 +92,34 @@ function List(parent, key)
     DataModel.addListener(this)
 }
 
+function Textbox(parent, key)
+{
+    this.redraw = function() {
+        object = DataModel.get(key)
+        var input = document.createElement("input")
+        input.setAttribute("type", "text")
+        input.setAttribute("value", object)
+        parent.empty()
+        parent.appendChild(input)
+        input.onchange = function() {
+            DataModel.set(key, input.value)
+        }
+    }
+
+    this.notify = function(k, value) {
+        this.redraw()
+    }
+
+    this.redraw()
+    DataModel.addListener(this)
+}
+
 function init()
 {
-    var root = document.getElementById("root");
-    var list = new List(root, new Key([]))
+    var tree = document.getElementById("tree");
+    var properties = document.getElementById("properties");
+    var list = new List(tree, new Key([]))
+    var tb = new Textbox(properties, new Key(["children", "2", "name"]))
 
     DataModel.set(new Key(["children", "2", "name"]), "Niklas Frykholm")
     DataModel.set(new Key(["children", "4", "name"]), "Karl")
