@@ -13,6 +13,15 @@ Key =
         json[key[key.length-1]] = value
     },
 
+    remove: function(json, key, value) {
+        for (var i=0; i<key.length-1; ++i) {
+            if (typeof(json[key[i]]) != "object")
+                json[key[i]] = {};
+            json = json[key[i]]
+        }
+        delete json[key[key.length-1]]
+    },
+
     get: function(json, key) {
         if (key.length==0)
             return json
@@ -44,6 +53,11 @@ var DataModel = {
 
     set : function(key, value) {
         Key.set(this.data, key, value)
+        this.notify(key)
+    },
+
+    remove : function(key) {
+        Key.remove(this.data, key)
         this.notify(key)
     },
 
@@ -207,6 +221,14 @@ function Properties(parent)
 
         this.name = new InputText(parent, "Name", sel.concat("name"))
         this.text = new TextArea(parent, "Text", sel.concat("text"))
+
+        var p = document.createElement("p")
+        p.appendChild(document.createTextNode("REMOVE"))
+        p.onmousedown = function() {
+            DataModel.remove(sel)
+            DataModel.remove(["selection"])
+        }
+        parent.appendChild(p)
     }
 
     this.notify = function(k, value) {
@@ -240,9 +262,6 @@ function init()
     var list = new List(tree, [])
     var prop = new Properties(properties)
     var save = new Save(document.getElementById("save"))
-
-    DataModel.set(["children", "2", "name"], "Niklas Frykholm")
-    DataModel.set(["children", "4", "name"], "Karl")
 }
 
 window.onload = init

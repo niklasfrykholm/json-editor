@@ -1,7 +1,8 @@
 DATA = {
     "children" : {
-        "1" : {"name" : "Mats"},
-        "2" : {"name" : "Niklas"},
-        "3" : {"name" : "Tobias"}
-    }
+        "3242341" : {"name" : "Data Model"},
+        "34234" : {"name" : "Viewport"},
+        "23423" : {"name" : "Editors"}
+    },
+    "selection" : ["3242341", "1"]
 }
