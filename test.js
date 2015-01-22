@@ -25,13 +25,7 @@ Key =
 var DataModel = {
     listeners : [],
 
-    data: {
-        "children" : {
-            "1" : {"name" : "Mats"},
-            "2" : {"name" : "Niklas"},
-            "3" : {"name" : "Tobias"}
-        }
-    },
+    data: DATA,
 
     set : function(key, value) {
         Key.set(this.data, key, value)
@@ -114,25 +108,36 @@ function List(parent, key)
     DataModel.addListener(this)
 }
 
-function Textbox(parent, key)
+function Textbox(parent, field, key)
 {
     this.redraw = function() {
         object = DataModel.get(key)
         var p = document.createElement("p")
-        p.appendChild(document.createTextNode("Name: "))
+        p.appendChild(document.createTextNode(field + ": "))
         var input = document.createElement("input")
         input.setAttribute("type", "text")
-        input.setAttribute("value", object)
+        if (object)
+            input.setAttribute("value", object)
         p.appendChild(input)
-        parent.empty()
         parent.appendChild(p)
         input.onchange = function() {
             DataModel.set(key, input.value)
         }
     }
 
-    this.teardown = function() {
-        DataModel.removeListener(this)
+    this.redraw()
+}
+
+function Properties(parent)
+{
+    this.redraw = function() {
+        parent.empty()
+        var sel = DataModel.get(["selection"])
+        if (sel === undefined)
+            return;
+
+        this.name = new Textbox(parent, "Name", sel.concat("name"))
+        this.text = new Textbox(parent, "Text", sel.concat("text"))
     }
 
     this.notify = function(k, value) {
@@ -143,24 +148,16 @@ function Textbox(parent, key)
     DataModel.addListener(this)
 }
 
-function Properties(parent)
+function Save(parent)
 {
     this.redraw = function() {
-        if (this.textbox) {
-            this.textbox.teardown()
-            this.textbox = null
-        }
-
-        parent.empty()
-        var sel = DataModel.get(["selection"])
-        if (sel !== undefined)
-            this.textbox = new Textbox(parent, sel.concat("name"))
+        var pre = document.createElement("pre")
+        pre.appendChild(document.createTextNode("DATA = " + JSON.stringify(DATA, null, "\t")))
+        var save = document.getElementById("save")
+        save.empty()
+        save.appendChild(pre)
     }
-
-    this.notify = function(k, value) {
-        this.redraw()
-    }
-
+    this.notify = function(k, value) {this.redraw()}
     this.redraw()
     DataModel.addListener(this)
 }
@@ -171,6 +168,7 @@ function init()
     var properties = document.getElementById("properties");
     var list = new List(tree, [])
     var prop = new Properties(properties)
+    var save = new Save(document.getElementById("save"))
 
     DataModel.set(["children", "2", "name"], "Niklas Frykholm")
     DataModel.set(["children", "4", "name"], "Karl")
