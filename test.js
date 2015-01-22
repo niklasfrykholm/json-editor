@@ -103,7 +103,7 @@ Array.prototype.equals = function(that) {
     return true
 }
 
-function List(parent, key)
+function List(parent, key, selkey)
 {
     this.redraw = function() {
         object = DataModel.get(key)
@@ -127,12 +127,12 @@ function List(parent, key)
             li.appendChild(t)
             ul.appendChild(li)
 
-            if (item_key.equals(DataModel.get(["selection"]))) {
+            if (item_key.equals(DataModel.get(selkey))) {
                 li.setAttribute("class", "selected")
             }
 
             li.onmousedown = function(kk) {
-                DataModel.set(["selection"], kk)
+                DataModel.set(selkey, kk)
             }.bind(this, item_key)
         }
         parent.appendChild(ul)
@@ -142,7 +142,7 @@ function List(parent, key)
             var id = (Math.floor((1 + Math.random()) * 0x10000)).toString()
             var nk = key.concat(["children", id])
             DataModel.set(nk.concat(["name"]), "Untitled")
-            DataModel.set(["selection"], nk)
+            DataModel.set(selkey, nk)
         }
         parent.appendChild(p)
     }
@@ -211,11 +211,11 @@ function TextArea(parent, field, key)
 }
 
 
-function Properties(parent)
+function Properties(parent, selkey)
 {
     this.redraw = function() {
         parent.empty()
-        var sel = DataModel.get(["selection"])
+        var sel = DataModel.get(selkey)
         if (sel === undefined)
             return;
 
@@ -226,13 +226,13 @@ function Properties(parent)
         p.appendChild(document.createTextNode("REMOVE"))
         p.onmousedown = function() {
             DataModel.remove(sel)
-            DataModel.remove(["selection"])
+            DataModel.remove(selkey)
         }
         parent.appendChild(p)
     }
 
     this.notify = function(k, value) {
-        if (Key.equals(k, ["selection"])) {
+        if (Key.equals(k, selkey)) {
             this.redraw()
         }
     }
@@ -259,9 +259,11 @@ function init()
 {
     var tree = document.getElementById("tree");
     var properties = document.getElementById("properties");
-    var list = new List(tree, [])
-    var prop = new Properties(properties)
+    var list = new List(tree, [], ["selection"])
+    var prop = new Properties(properties, ["selection"])
     var save = new Save(document.getElementById("save"))
+    var list2 = new List(document.getElementById("tree2"), [], ["selection2"])
+    var prop = new Properties(document.getElementById("properties2"), ["selection2"])
 }
 
 window.onload = init

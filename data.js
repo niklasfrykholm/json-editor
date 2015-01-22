@@ -4,5 +4,6 @@ DATA = {
         "34234" : {"name" : "Viewport"},
         "23423" : {"name" : "Editors"}
     },
-    "selection" : ["3242341", "1"]
+    "selection" : ["children", "3242341"],
+    "selection2" : ["children", "23423"]
 }
