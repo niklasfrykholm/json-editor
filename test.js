@@ -1,3 +1,27 @@
+Key =
+{
+    set: function(json, key, value) {
+        for (var i=0; i<key.length-1; ++i) {
+            if (typeof(json[key[i]]) != "object")
+                json[key[i]] = {};
+                json = json[key[i]]
+            }
+            json[key[key.length-1]] = value
+        },
+
+    get: function(json, key) {
+        if (key.length==0)
+            return json
+
+        for (var i=0; i<key.length-1; ++i) {
+            if (typeof(json[key[i]]) != "object")
+                return null;
+                json = json[key[i]]
+            }
+            return json[key[key.length-1]]
+        },
+}
+
 var DataModel = {
     listeners : [],
 
@@ -6,16 +30,17 @@ var DataModel = {
             "1" : {"name" : "Mats"},
             "2" : {"name" : "Niklas"},
             "3" : {"name" : "Tobias"}
-        }
+        },
+        "selection" : []
     },
 
     set : function(key, value) {
-        key.set(this.data, value)
+        Key.set(this.data, key, value)
         this.notify(key)
     },
 
     get : function(key) {
-        return key.get(this.data)
+        return Key.get(this.data, key)
     },
 
     notify : function(key) {
@@ -28,39 +53,24 @@ var DataModel = {
     }
 }
 
-function Key(path)
-{
-    this.path = path
-
-    this.set = function (json, value) {
-        for (var i=0; i<this.path.length-1; ++i) {
-            if (typeof(json[this.path[i]]) != "object")
-                json[this.path[i]] = {};
-            json = json[this.path[i]]
-        }
-        json[this.path[this.path.length-1]] = value
-    }
-
-    this.get = function (json) {
-        if (this.path.length==0)
-            return json
-
-        for (var i=0; i<this.path.length-1; ++i) {
-            if (typeof(json[this.path[i]]) != "object")
-                return null;
-            json = json[this.path[i]]
-        }
-        return json[this.path[this.path.length-1]]
-    }
-
-    this.append = function (arr) {
-        return new Key(this.path.concat(arr))
-    }
-}
-
 Element.prototype.empty = function() {
     while (this.firstChild)
         this.removeChild(this.firstChild)
+}
+
+Array.prototype.equals = function(that) {
+    if (typeof(this) != typeof(that))
+        return false
+
+    if (this.length != that.length)
+        return false
+
+    for (var i=0; i<this.length; ++i) {
+        if (this[i] != that[i])
+            return false
+    }
+
+    return true
 }
 
 function List(parent, key)
@@ -71,15 +81,23 @@ function List(parent, key)
         var ul = document.createElement("ul")
         var children = object["children"]
         for (k in children) {
+            var item_key = key.concat(["children", k])
             var child = children[k]
             var li = document.createElement("li")
             var t = document.createTextNode(child["name"])
             li.appendChild(t)
             ul.appendChild(li)
-            var kk = key.append(["children", k, "name"])
+
+            if (item_key.equals(DataModel.get(["selection"]))) {
+                console.log("selected", item_key)
+                li.setAttribute("class", "selected")
+            }
+
             li.onmousedown = function(kk) {
-                DataModel.set(kk, DataModel.get(kk) + " CLICK")
-            }.bind(this, kk)
+                console.log("click", kk)
+                // DataModel.set(kk, DataModel.get(kk) + " CLICK")
+                DataModel.set(["selection"], kk)
+            }.bind(this, item_key)
         }
         parent.appendChild(ul)
     }
@@ -118,11 +136,11 @@ function init()
 {
     var tree = document.getElementById("tree");
     var properties = document.getElementById("properties");
-    var list = new List(tree, new Key([]))
-    var tb = new Textbox(properties, new Key(["children", "2", "name"]))
+    var list = new List(tree, [])
+    var tb = new Textbox(properties, ["children", "2", "name"])
 
-    DataModel.set(new Key(["children", "2", "name"]), "Niklas Frykholm")
-    DataModel.set(new Key(["children", "4", "name"]), "Karl")
+    DataModel.set(["children", "2", "name"], "Niklas Frykholm")
+    DataModel.set(["children", "4", "name"], "Karl")
 }
 
 window.onload = init
