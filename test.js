@@ -4,10 +4,10 @@ Key =
         for (var i=0; i<key.length-1; ++i) {
             if (typeof(json[key[i]]) != "object")
                 json[key[i]] = {};
-                json = json[key[i]]
-            }
-            json[key[key.length-1]] = value
-        },
+            json = json[key[i]]
+        }
+        json[key[key.length-1]] = value
+    },
 
     get: function(json, key) {
         if (key.length==0)
@@ -15,11 +15,11 @@ Key =
 
         for (var i=0; i<key.length-1; ++i) {
             if (typeof(json[key[i]]) != "object")
-                return null;
-                json = json[key[i]]
-            }
-            return json[key[key.length-1]]
-        },
+                return undefined;
+            json = json[key[i]]
+        }
+        return json[key[key.length-1]]
+    },
 }
 
 var DataModel = {
@@ -30,8 +30,7 @@ var DataModel = {
             "1" : {"name" : "Mats"},
             "2" : {"name" : "Niklas"},
             "3" : {"name" : "Tobias"}
-        },
-        "selection" : []
+        }
     },
 
     set : function(key, value) {
@@ -44,13 +43,21 @@ var DataModel = {
     },
 
     notify : function(key) {
-        for (var i=0; i<this.listeners.length; ++i)
-            this.listeners[i].notify(key)
+        for (var i=0; i<this.listeners.length; ++i) {
+            var l = this.listeners[i]
+            l.notify(key)
+        }
     },
 
     addListener: function(l) {
         this.listeners.push(l)
-    }
+    },
+
+    removeListener: function(l) {
+        var index = this.listeners.index
+        if (index > -1)
+            this.listeners.splice(index, 1)
+    },
 }
 
 Element.prototype.empty = function() {
@@ -89,13 +96,10 @@ function List(parent, key)
             ul.appendChild(li)
 
             if (item_key.equals(DataModel.get(["selection"]))) {
-                console.log("selected", item_key)
                 li.setAttribute("class", "selected")
             }
 
             li.onmousedown = function(kk) {
-                console.log("click", kk)
-                // DataModel.set(kk, DataModel.get(kk) + " CLICK")
                 DataModel.set(["selection"], kk)
             }.bind(this, item_key)
         }
@@ -114,14 +118,43 @@ function Textbox(parent, key)
 {
     this.redraw = function() {
         object = DataModel.get(key)
+        var p = document.createElement("p")
+        p.appendChild(document.createTextNode("Name: "))
         var input = document.createElement("input")
         input.setAttribute("type", "text")
         input.setAttribute("value", object)
+        p.appendChild(input)
         parent.empty()
-        parent.appendChild(input)
+        parent.appendChild(p)
         input.onchange = function() {
             DataModel.set(key, input.value)
         }
+    }
+
+    this.teardown = function() {
+        DataModel.removeListener(this)
+    }
+
+    this.notify = function(k, value) {
+        this.redraw()
+    }
+
+    this.redraw()
+    DataModel.addListener(this)
+}
+
+function Properties(parent)
+{
+    this.redraw = function() {
+        if (this.textbox) {
+            this.textbox.teardown()
+            this.textbox = null
+        }
+
+        parent.empty()
+        var sel = DataModel.get(["selection"])
+        if (sel !== undefined)
+            this.textbox = new Textbox(parent, sel.concat("name"))
     }
 
     this.notify = function(k, value) {
@@ -137,7 +170,7 @@ function init()
     var tree = document.getElementById("tree");
     var properties = document.getElementById("properties");
     var list = new List(tree, [])
-    var tb = new Textbox(properties, ["children", "2", "name"])
+    var prop = new Properties(properties)
 
     DataModel.set(["children", "2", "name"], "Niklas Frykholm")
     DataModel.set(["children", "4", "name"], "Karl")
