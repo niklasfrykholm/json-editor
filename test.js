@@ -1,3 +1,33 @@
+var DataModel = {
+    listeners : [],
+
+    data: {
+        "children" : {
+            "1" : {"name" : "Mats"},
+            "2" : {"name" : "Niklas"},
+            "3" : {"name" : "Tobias"}
+        }
+    },
+
+    set : function(key, value) {
+        key.set(this.data, value)
+        this.notify(key)
+    },
+
+    get : function(key) {
+        return key.get(this.data)
+    },
+
+    notify : function(key) {
+        for (var i=0; i<this.listeners.length; ++i)
+            this.listeners[i].notify(key)
+    },
+
+    addListener: function(l) {
+        this.listeners.push(l)
+    }
+}
+
 function Key(path)
 {
     this.path = path
@@ -10,29 +40,18 @@ function Key(path)
         }
         json[this.path[this.path.length-1]] = value
     }
-}
 
-var dm = {
-    "children" : {
-        "1" : {"name" : "Mats"},
-        "2" : {"name" : "Niklas"},
-        "3" : {"name" : "Tobias"}
+    this.get = function (json) {
+        if (this.path.length==0)
+            return json
+
+        for (var i=0; i<this.path.length-1; ++i) {
+            if (typeof(json[this.path[i]]) != "object")
+                return null;
+            json = json[this.path[i]]
+        }
+        return json[this.path[this.path.length-1]]
     }
-};
-
-var _listeners = [];
-
-function set(key, value)
-{
-    key.set(dm, value)
-    notify(key)
-}
-
-function notify(key)
-{
-    for (var i=0; i<_listeners.length; ++i)
-        _listeners[i].notify(key)
-
 }
 
 Element.prototype.empty = function() {
@@ -40,39 +59,15 @@ Element.prototype.empty = function() {
         this.removeChild(this.firstChild)
 }
 
-// Object identifier: ID or PATH
-// ("children", 1, "name")
-
-/*
-    QUERY_OBJECT (#ID) -> State
-    SET_STATE (#ID, DeltaState)
-    NOTIFY_STATE (#ID, DeltaState)
-    CREATE_OBJECT (#ID)
-    DESTROY_OBJECT (#ID)
-
-    tree_editor(#ROOT_ID, #SELECTION_ID)
-    {
-        QUERY(ROOT_ID)
-        QUERY(SELECTION_ID)
-    }
-
-    notify_state(#ID, state)
-    {
-        if (inlist(ID, TREEID))
-            ;
-        if (ID == SELECTION_ID)
-            ;
-    }
-*/
-
-function List(parent, object)
+function List(parent, key)
 {
     this.redraw = function() {
+        object = DataModel.get(key)
         parent.empty()
         var ul = document.createElement("ul")
         var children = object["children"]
-        for (key in children) {
-            var child = children[key]
+        for (k in children) {
+            var child = children[k]
             var li = document.createElement("li")
             var t = document.createTextNode(child["name"])
             li.appendChild(t)
@@ -82,31 +77,21 @@ function List(parent, object)
         parent.appendChild(ul)
     }
 
-    this.notify = function(key, value) {
+    this.notify = function(k, value) {
         this.redraw()
     }
 
     this.redraw()
-
-    _listeners.push(this)
-}
-
-
-function p(parent, text)
-{
-    var t = document.createTextNode(text || "");
-    var p = document.createElement("p");
-    p.appendChild(t);
-    parent.appendChild(p);
+    DataModel.addListener(this)
 }
 
 function init()
 {
     var root = document.getElementById("root");
-    var list = new List(root, dm)
+    var list = new List(root, new Key([]))
 
-    set(new Key(["children", "2", "name"]), "Niklas Frykholm")
-    set(new Key(["children", "4", "name"]), "Karl")
+    DataModel.set(new Key(["children", "2", "name"]), "Niklas Frykholm")
+    DataModel.set(new Key(["children", "4", "name"]), "Karl")
 }
 
 window.onload = init
