@@ -4,6 +4,7 @@ DATA = {
         "34234" : {"name" : "Viewport"},
         "23423" : {"name" : "Editors"}
     },
-    "selection" : ["children", "3242341"],
-    "selection2" : ["children", "23423"]
+
+    session_1: {"selection" : ["children", "3242341"]},
+    session_2: {"selection" : ["children", "23423"]},
 }

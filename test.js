@@ -88,8 +88,10 @@ Array.prototype.equals = function(that) {
     return true
 }
 
-function List(parent, key, selkey)
+function List(parent, key, session)
 {
+    var selkey = session.concat("selection")
+
     this.redraw = function() {
         object = DataModel.get(key)
         parent.empty()
@@ -196,8 +198,10 @@ function TextArea(parent, field, key)
 }
 
 
-function Properties(parent, selkey)
+function Properties(parent, session)
 {
+    var selkey = session.concat("selection")
+
     this.redraw = function() {
         parent.empty()
         var sel = DataModel.get(selkey)
@@ -242,13 +246,13 @@ function Save(parent)
 
 function init()
 {
-    var tree = document.getElementById("tree");
-    var properties = document.getElementById("properties");
-    var list = new List(tree, [], ["selection"])
-    var prop = new Properties(properties, ["selection"])
+    var list = new List(document.getElementById("tree"), [], ["session_1"])
+    var prop = new Properties(document.getElementById("properties"), ["session_1"])
+
+    var list2 = new List(document.getElementById("tree2"), [], ["session_2"])
+    var prop = new Properties(document.getElementById("properties2"), ["session_2"])
+
     var save = new Save(document.getElementById("save"))
-    var list2 = new List(document.getElementById("tree2"), [], ["selection2"])
-    var prop = new Properties(document.getElementById("properties2"), ["selection2"])
 }
 
 window.onload = init
