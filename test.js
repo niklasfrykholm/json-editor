@@ -1,5 +1,3 @@
-// TODO: Partially apply DOM differences instead of recreating all objects.
-
 // TODO: Hierarchical tree view
 
 Key =
@@ -10,16 +8,10 @@ Key =
                 json[key[i]] = {};
             json = json[key[i]]
         }
-        json[key[key.length-1]] = value
-    },
-
-    remove: function(json, key, value) {
-        for (var i=0; i<key.length-1; ++i) {
-            if (typeof(json[key[i]]) != "object")
-                json[key[i]] = {};
-            json = json[key[i]]
-        }
-        delete json[key[key.length-1]]
+        if (value === null || value === undefined)
+            delete json[key[key.length-1]]
+        else
+            json[key[key.length-1]] = value
     },
 
     get: function(json, key) {
@@ -53,11 +45,6 @@ var DataModel = {
 
     set : function(key, value) {
         Key.set(this.data, key, value)
-        this.notify(key)
-    },
-
-    remove : function(key) {
-        Key.remove(this.data, key)
         this.notify(key)
     },
 
@@ -225,8 +212,8 @@ function Properties(parent, selkey)
         var p = document.createElement("p")
         p.appendChild(document.createTextNode("REMOVE"))
         p.onmousedown = function() {
-            DataModel.remove(sel)
-            DataModel.remove(selkey)
+            DataModel.set(sel, null)
+            DataModel.set(selkey, null)
         }
         parent.appendChild(p)
     }
