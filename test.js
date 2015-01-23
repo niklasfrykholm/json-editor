@@ -1,4 +1,11 @@
-// TODO: Hierarchical tree view
+// # To do
+//
+// * Session identifier
+// * Undo support
+// * Use ID instead of path for key?
+// * Hierarchical tree view
+// * True properties panel with type descriptor
+// * Drag and drop in tree view
 
 Key =
 {
