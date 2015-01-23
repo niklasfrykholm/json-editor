@@ -41,9 +41,26 @@ var DataModel = {
 
     data: DATA,
 
-    set : function(key, value) {
+    set : function(key, value, session) {
+        var undo = Key.get(this.data, session)["undo"]
+        if (!undo || undo.constructor !== Array) {
+            undo = []
+            Key.set(this.data, session.concat(["undo"]), undo)
+        }
+        undo.push({key:key, value:this.get(key)})
+
         Key.set(this.data, key, value)
         this.notify(key)
+    },
+
+    undo: function(session) {
+        var undo = Key.get(this.data, session)["undo"]
+        if (!undo || undo.length == 0)
+            return;
+        var item = undo[undo.length-1]
+        undo.length = undo.length - 1
+        Key.set(this.data, item.key, item.value)
+        this.notify(item.key)
     },
 
     get : function(key) {
@@ -62,7 +79,7 @@ var DataModel = {
     },
 
     removeListener: function(l) {
-        var index = this.listeners.index
+        var index = this.listeners.indexOf(l)
         if (index > -1)
             this.listeners.splice(index, 1)
     },
@@ -71,21 +88,6 @@ var DataModel = {
 Element.prototype.empty = function() {
     while (this.firstChild)
         this.removeChild(this.firstChild)
-}
-
-Array.prototype.equals = function(that) {
-    if (typeof(this) != typeof(that))
-        return false
-
-    if (this.length != that.length)
-        return false
-
-    for (var i=0; i<this.length; ++i) {
-        if (this[i] != that[i])
-            return false
-    }
-
-    return true
 }
 
 function List(parent, key, session)
@@ -114,23 +116,35 @@ function List(parent, key, session)
             li.appendChild(t)
             ul.appendChild(li)
 
-            if (item_key.equals(DataModel.get(selkey))) {
+            if (Key.equals(item_key, DataModel.get(selkey))) {
                 li.setAttribute("class", "selected")
             }
 
             li.onmousedown = function(kk) {
-                DataModel.set(selkey, kk)
+                DataModel.set(selkey, kk, session)
             }.bind(this, item_key)
         }
         parent.appendChild(ul)
         var p = document.createElement("p")
-        p.appendChild(document.createTextNode("ADD"))
-        p.onmousedown = function() {
+        var add = document.createElement("span")
+        add.appendChild(document.createTextNode("ADD"))
+        add.onmousedown = function() {
             var id = (Math.floor((1 + Math.random()) * 0x10000)).toString()
             var nk = key.concat(["children", id])
-            DataModel.set(nk.concat(["name"]), "Untitled")
-            DataModel.set(selkey, nk)
+            DataModel.set(nk, {name: "Untitled"}, session)
+            DataModel.set(selkey, nk, session)
         }
+        p.appendChild(add)
+
+        p.appendChild(document.createTextNode(" "))
+
+        var undo = document.createElement("span")
+        undo.appendChild(document.createTextNode("UNDO"))
+        undo.onmousedown = function() {
+            DataModel.undo(session)
+        }
+        p.appendChild(undo)
+
         parent.appendChild(p)
     }
 
@@ -142,7 +156,7 @@ function List(parent, key, session)
     DataModel.addListener(this)
 }
 
-function InputText(parent, field, key)
+function InputText(parent, field, key, session)
 {
     var p = document.createElement("p")
     var span = document.createElement("span")
@@ -154,13 +168,17 @@ function InputText(parent, field, key)
     p.appendChild(this.input)
     parent.appendChild(p)
     this.input.onchange = function() {
-        DataModel.set(key, this.input.value)
+        DataModel.set(key, this.input.value, session)
     }.bind(this)
 
     this.redraw = function() {
         object = DataModel.get(key)
         if (object)
-            this.input.setAttribute("value", object)
+            this.input.value = object
+    }
+
+    this.teardown = function() {
+        DataModel.removeListener(this)
     }
 
     this.notify = this.redraw
@@ -169,7 +187,7 @@ function InputText(parent, field, key)
     DataModel.addListener(this)
 }
 
-function TextArea(parent, field, key)
+function TextArea(parent, field, key, session)
 {
     var p = document.createElement("p")
     var span = document.createElement("span")
@@ -180,15 +198,17 @@ function TextArea(parent, field, key)
     p.appendChild(this.textarea)
     parent.appendChild(p)
     this.textarea.onchange = function() {
-        DataModel.set(key, this.textarea.value)
+        DataModel.set(key, this.textarea.value, session)
     }.bind(this)
 
     this.redraw = function() {
         object = DataModel.get(key)
-        if (object) {
-            this.textarea.empty()
-            this.textarea.appendChild(document.createTextNode(object))
-        }
+        if (object)
+            this.textarea.value = object
+    }
+
+    this.teardown = function() {
+        DataModel.removeListener(this)
     }
 
     this.notify = this.redraw
@@ -197,25 +217,27 @@ function TextArea(parent, field, key)
     DataModel.addListener(this)
 }
 
-
 function Properties(parent, session)
 {
     var selkey = session.concat("selection")
 
     this.redraw = function() {
+        if (this.name) {this.name.teardown()}
+        if (this.text) {this.text.teardown()}
+
         parent.empty()
         var sel = DataModel.get(selkey)
         if (sel === undefined)
             return;
 
-        this.name = new InputText(parent, "Name", sel.concat("name"))
-        this.text = new TextArea(parent, "Text", sel.concat("text"))
+        this.name = new InputText(parent, "Name", sel.concat("name"), session)
+        this.text = new TextArea(parent, "Text", sel.concat("text"), session)
 
         var p = document.createElement("p")
         p.appendChild(document.createTextNode("REMOVE"))
         p.onmousedown = function() {
-            DataModel.set(sel, null)
-            DataModel.set(selkey, null)
+            DataModel.set(sel, null, session)
+            DataModel.set(selkey, null, session)
         }
         parent.appendChild(p)
     }
